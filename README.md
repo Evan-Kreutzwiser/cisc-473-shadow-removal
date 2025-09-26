@@ -1,8 +1,6 @@
 # ST-CGAN: Stacked Conditional Generative Adversarial Networks for Jointly Learning Shadow Detection and Shadow Removal with PyTorch
 
-This repository is unofficial implementation of  [Stacked Conditional Generative Adversarial Networks for Jointly Learning Shadow Detection and Shadow Removal](https://arxiv.org/abs/1712.02478) [Wang+, **CVPR** 2018] with PyTorch.
-
-**Official Dataset and Code(coming soon...) is [here](https://github.com/DeepInsight-PCALab/ST-CGAN).**
+This repository is an alteration to the code [ST-CGAN_Stacked_Conditional_Generative_Adversarial_Networks](https://github.com/IsHYuhi/ST-CGAN_Stacked_Conditional_Generative_Adversarial_Networks), which itself is an unofficial implementation of  [Stacked Conditional Generative Adversarial Networks for Jointly Learning Shadow Detection and Shadow Removal](https://arxiv.org/abs/1712.02478) [Wang+, **CVPR** 2018] with PyTorch.
 
 ## Requirements
 * Python3.x
@@ -49,3 +47,4 @@ You can download from [here](https://drive.google.com/drive/folders/1J1l21k5AoUX
 
 ## References
 * Stacked Conditional Generative Adversarial Networks for Jointly Learning Shadow Detection and Shadow Removal, Jifeng Wang<sup>∗</sup>, Xiang Li<sup>∗</sup>, Le Hui, Jian Yang, **Nanjing University of Science and Technology**, [[arXiv]](https://arxiv.org/abs/1712.02478)
+* https://github.com/IsHYuhi/ST-CGAN_Stacked_Conditional_Generative_Adversarial_Networks
