@@ -1,3 +1,4 @@
+import math
 import torch.nn.functional as F
 import torch.nn as nn
 import torch
@@ -61,7 +62,7 @@ class CvTi(nn.Module):
     def __init__(self, in_channels, out_channels, before=None, after=False, kernel_size=4, stride=2,
                  padding=1, dilation=1, groups=1, bias=False):
         super(CvTi, self).__init__()
-        self.conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, bias)
+        self.conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding, output_padding=0, groups=groups, bias=bias, dilation=dilation)
         self.conv.apply(weights_init('gaussian'))
 
         if after=='BN':
