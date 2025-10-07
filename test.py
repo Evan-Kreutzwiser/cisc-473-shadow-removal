@@ -180,6 +180,10 @@ def main(parser):
 
     mean = (0.5,)
     std = (0.5,)
+    brightness = 0 #0.4
+    saturation = 0 #0.7
+    contrast = 0 #0.1
+    hue = 0 #0.015
 
     size = parser.image_size
     crop_size = parser.crop_size
@@ -188,7 +192,7 @@ def main(parser):
     # test own image
     if parser.image_path is not None:
         print('test ' + parser.image_path)
-        test_own_image(G1, G2, parser.image_path, parser.out_path, resized_size, img_transform=ImageTransformOwn(size=size, mean=mean, std=std))
+        test_own_image(G1, G2, parser.image_path, parser.out_path, resized_size, img_transform=ImageTransformOwn(size=size, mean=mean, std=std, brightness=brightness, saturation=saturation, constract=contrast, hue=hue))
 
     # test images from the ISTD dataset
     else:

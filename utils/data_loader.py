@@ -65,10 +65,14 @@ class ImageTransform():
     """
     preprocessing images
     """
-    def __init__(self, size=286, crop_size=256, mean=(0.5, ), std=(0.5, )):
+    def __init__(self, size=286, crop_size=256, mean=(0.5, ), std=(0.5, ), brightness=0, saturation=0, contrast=0, hue=0):
         self.data_transform = {'train': ISTD_transforms.Compose([ISTD_transforms.Scale(size=size),
                                                             ISTD_transforms.RandomCrop(size=crop_size),
                                                             ISTD_transforms.RandomHorizontalFlip(p=0.5),
+                                                            transforms.transforms.ColorJitter(brightness=brightness,
+                                                                                              saturation=saturation,
+                                                                                              contrast=contrast,
+                                                                                              hue=hue),
                                                             ISTD_transforms.ToTensor(),
                                                             ISTD_transforms.Normalize(mean, std)]),
 
