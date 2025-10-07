@@ -2,6 +2,7 @@ result/*detect.jpg
 result/*removal.jpg
 logs/
 checkpoints/*.pth
+test_result/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -91,7 +91,7 @@ def test(G1, G2, test_dataset):
     
     for n, (img, gt_shadow, gt) in enumerate([test_dataset[i] for i in range(test_dataset.__len__())]):
 
-        print(test_dataset.img_list['path_A'][n].split('/')[4][:-4])
+        print(test_dataset.img_list['path_A'][n].split('/')[-1][:-4])
 
         img = torch.unsqueeze(img, dim=0)
         gt_shadow = torch.unsqueeze(gt_shadow, dim=0)
@@ -110,13 +110,13 @@ def test(G1, G2, test_dataset):
                                     unnormalize(torch.cat([detected_shadow, detected_shadow, detected_shadow], dim=1))],
                                     dim=0))
 
-        save_image(grid, './test_result/grid/'+test_dataset.img_list['path_A'][n].split('/')[4])
+        save_image(grid, './test_result/grid/'+test_dataset.img_list['path_A'][n].split('/')[-1])
 
         detected_shadow = transforms.ToPILImage(mode='L')(unnormalize(detected_shadow)[0, :, :, :])
-        detected_shadow.save('./test_result/detected_shadow/'+test_dataset.img_list['path_A'][n].split('/')[4])
+        detected_shadow.save('./test_result/detected_shadow/'+test_dataset.img_list['path_A'][n].split('/')[-1])
 
         shadow_removal_image = transforms.ToPILImage(mode='RGB')(unnormalize(shadow_removal_image)[0, :, :, :])
-        shadow_removal_image.save('./test_result/shadow_removal_image/'+test_dataset.img_list['path_A'][n].split('/')[4])
+        shadow_removal_image.save('./test_result/shadow_removal_image/'+test_dataset.img_list['path_A'][n].split('/')[-1])
 
 def test_own_image(G1, G2, path, out_path, size, img_transform):
     img = Image.open(path).convert('RGB')
