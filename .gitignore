@@ -1,3 +1,8 @@
+result/*detect.jpg
+result/*removal.jpg
+logs/
+checkpoints/*.pth
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
