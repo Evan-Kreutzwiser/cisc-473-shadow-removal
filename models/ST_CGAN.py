@@ -89,9 +89,27 @@ class CvTi(nn.Module):
 
         return x
 
-class Generator(nn.Module):
+class SelfAttention(nn.Module):
+    def __init__(self, input_dim, num_heads, batch_size):
+        super(SelfAttention, self).__init__()
+        self.input_channels = input_dim
+        self.multihead = nn.MultiheadAttention(input_dim, num_heads, 0.05)
+
+    def forward(self, x):
+        batch_size, channels, height, width = x.shape
+
+        # Reshape to (Batch, Sequence_Length, Channels)
+        x = x.view(batch_size, channels, -1).permute(0, 2, 1)
+
+        attn_output, _ = self.multihead(x, x, x)
+
+        # Reshape back to (Batch, Channels, Height, Width)
+        attn_output = attn_output.permute(0, 2, 1).view(batch_size, channels, height, width)
+        return attn_output
+
+class MaskGenerator(nn.Module):
     def __init__(self, input_channels=3, output_channels=1):
-        super(Generator, self).__init__()
+        super(MaskGenerator, self).__init__()
 
         self.Cv0 = Cvi(input_channels, 64)
 
@@ -130,6 +148,74 @@ class Generator(nn.Module):
 
         #decoder
         x6 = self.CvT6(x5)
+
+        cat1_1 = torch.cat([x6, x4_3], dim=1)
+        x7_1 = self.CvT7(cat1_1)
+        cat1_2 = torch.cat([x7_1, x4_2], dim=1)
+        x7_2 = self.CvT7(cat1_2)
+        cat1_3 = torch.cat([x7_2, x4_1], dim=1)
+        x7_3 = self.CvT7(cat1_3)
+
+        cat2 = torch.cat([x7_3, x3], dim=1)
+        x8 = self.CvT8(cat2)
+
+        cat3 = torch.cat([x8, x2], dim=1)
+        x9 = self.CvT9(cat3)
+
+        cat4 = torch.cat([x9, x1], dim=1)
+        x10 = self.CvT10(cat4)
+
+        cat5 = torch.cat([x10, x0], dim=1)
+        out = self.CvT11(cat5)
+
+        return out
+
+class RemovalGenerator(nn.Module):
+    def __init__(self, input_channels=4, output_channels=3):
+        super(RemovalGenerator, self).__init__()
+
+        self.Cv0 = Cvi(input_channels, 64)
+
+        self.Cv1 = Cvi(64, 128, before='LReLU', after='BN')
+
+        self.Cv2 = Cvi(128, 256, before='LReLU', after='BN')
+
+        self.Cv3 = Cvi(256, 512, before='LReLU', after='BN')
+
+        self.Cv4 = Cvi(512, 512, before='LReLU', after='BN')
+
+        self.Cv5 = Cvi(512, 512, before='LReLU')
+
+        self.attention = SelfAttention(512, batch_size=4, num_heads=8)
+
+        self.CvT6 = CvTi(512, 512, before='ReLU', after='BN')
+
+        self.CvT7 = CvTi(1024, 512, before='ReLU', after='BN')
+
+        self.CvT8 = CvTi(1024, 256, before='ReLU', after='BN')
+
+        self.CvT9 = CvTi(512, 128, before='ReLU', after='BN')
+
+        self.CvT10 = CvTi(256, 64, before='ReLU', after='BN')
+
+        self.CvT11 = CvTi(128, output_channels, before='ReLU', after='Tanh')
+
+    def forward(self, input):
+        #encoder
+        x0 = self.Cv0(input)
+        x1 = self.Cv1(x0)
+        x2 = self.Cv2(x1)
+        x3 = self.Cv3(x2)
+        x4_1 = self.Cv4(x3)
+        x4_2 = self.Cv4(x4_1)
+        x4_3 = self.Cv4(x4_2)
+        x5 = self.Cv5(x4_3)
+
+        # Attention
+        a0 = self.attention(x5)
+
+        #decoder
+        x6 = self.CvT6(a0)
 
         cat1_1 = torch.cat([x6, x4_3], dim=1)
         x7_1 = self.CvT7(cat1_1)
@@ -199,10 +285,17 @@ if __name__ == '__main__':
 
 
     #Generator test
-    model = Generator()
+    model = MaskGenerator()
     output = model(input)
     print(output.shape)
     loss = l1(output, torch.randn(3, 1, 256, 256))
+    loss.backward()
+    print(loss.item())
+
+    model = RemovalGenerator(input_channels=3)
+    output = model(input)
+    print(output.shape)
+    loss = l1(output, torch.randn(3, 3, 256, 256))
     loss.backward()
     print(loss.item())
 

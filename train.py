@@ -1,5 +1,5 @@
 from utils.data_loader import make_datapath_list, ImageDataset, ImageTransform
-from models.ST_CGAN import Generator, Discriminator
+from models.ST_CGAN import MaskGenerator, RemovalGenerator, Discriminator
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 from torch.autograd import Variable
@@ -263,8 +263,8 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
 
 
 def main(parser):
-    G1 = Generator(input_channels=3, output_channels=1)
-    G2 = Generator(input_channels=4, output_channels=3)
+    G1 = MaskGenerator(input_channels=3, output_channels=1)
+    G2 = RemovalGenerator(input_channels=4, output_channels=3)
     D1 = Discriminator(input_channels=4)
     D2 = Discriminator(input_channels=7)
 

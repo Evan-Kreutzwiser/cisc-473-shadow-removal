@@ -1,5 +1,5 @@
 from utils.data_loader import make_datapath_list, ImageDataset, ImageTransform, ImageTransformOwn
-from models.ST_CGAN import Generator, Discriminator
+from models.ST_CGAN import MaskGenerator, RemovalGenerator, Discriminator
 from torchvision.utils import make_grid
 from torchvision.utils import save_image
 from torchvision import models
@@ -165,8 +165,8 @@ def test_own_image(G1, G2, path, out_path, size, img_transform):
         shadow_removal_image.save(out_path + '/shadow_removal_image_' + path.split('/')[-1])
 
 def main(parser):
-    G1 = Generator(input_channels=3, output_channels=1)
-    G2 = Generator(input_channels=4, output_channels=3)
+    G1 = MaskGenerator(input_channels=3, output_channels=1)
+    G2 = RemovalGenerator(input_channels=4, output_channels=3)
 
     '''load'''
     if parser.load is not None:
