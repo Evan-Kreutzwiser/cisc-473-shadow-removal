@@ -124,10 +124,17 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
     lr = parser.lr
     beta1, beta2 = 0.5, 0.999
 
-    optimizerG = torch.optim.Adam([{'params': G1.parameters()}, {'params': G2.parameters()}],
+    optimizerG1 = torch.optim.Adam([{'params': G1.parameters()}],
                                   lr=lr,
                                   betas=(beta1, beta2))
-    optimizerD = torch.optim.Adam([{'params': D1.parameters()}, {'params': D2.parameters()}],
+    optimizerD1 = torch.optim.Adam([{'params': D1.parameters()}],
+                                  lr=lr,
+                                  betas=(beta1, beta2))
+    
+    optimizerG2 = torch.optim.Adam([{'params': G1.parameters()}, {'params': G2.parameters()}],
+                                  lr=lr,
+                                  betas=(beta1, beta2))
+    optimizerD2 = torch.optim.Adam([{'params': D1.parameters()}, {'params': D2.parameters()}],
                                   lr=lr,
                                   betas=(beta1, beta2))
 
@@ -142,19 +149,31 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
     lambda_dict = {'lambda1':5, 'lambda2':0.1, 'lambda3':0.1}
 
     iteration = 1
-    g_losses = []
-    d_losses = []
+    g1_losses = []
+    d1_losses = []
+    g2_losses = []
+    d2_losses = []
+
+    shadow_removal = False
 
     for epoch in range(num_epochs+1):
 
+        if (not(shadow_removal)) and (epoch > 30):
+            shadow_removal = True
+
         G1.train()
-        G2.train()
         D1.train()
-        D2.train()
+
+        if shadow_removal:
+            G2.train()
+            D2.train()
+
         t_epoch_start = time.time()
 
-        epoch_g_loss = 0.0
-        epoch_d_loss = 0.0
+        epoch_g1_loss = 0.0
+        epoch_d1_loss = 0.0
+        epoch_g2_loss = 0.0
+        epoch_d2_loss = 0.0
 
         print('-----------')
         print('Epoch {}/{}'.format(epoch, num_epochs))
@@ -174,7 +193,10 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
 
             # Train Discriminator
             set_requires_grad([D1, D2], True)  # enable backprop$
-            optimizerD.zero_grad()
+            optimizerD1.zero_grad()
+
+            if shadow_removal:
+                optimizerD2.zero_grad()
 
             # for D1
             detected_shadow = G1(images)
@@ -184,6 +206,7 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             out_D1_real = D1(real1)# .detach() is not required as real1 doesn't have grad
 
             # for D2
+            #if shadow_removal:
             shadow_removal_image = G2(fake1)
             fake2 = torch.cat([fake1, shadow_removal_image], dim=1)
             real2 = torch.cat([real1, gt], dim=1)
@@ -199,6 +222,7 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             D_L_CGAN1 = loss_D1_fake + loss_D1_real
 
             # L_CGAN2
+            #if shadow_removal:
             label_D2_fake = Variable(Tensor(np.zeros(out_D2_fake.size())), requires_grad=True)
             label_D2_real = Variable(Tensor(np.ones(out_D2_fake.size())), requires_grad=True)
 
@@ -207,13 +231,22 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             D_L_CGAN2 = loss_D2_fake + loss_D2_real
 
             # total
-            D_loss = lambda_dict['lambda2'] * D_L_CGAN1 + lambda_dict['lambda3'] * D_L_CGAN2
-            D_loss.backward()
-            optimizerD.step()
+            if not shadow_removal:
+                D1_loss = lambda_dict['lambda2'] * D_L_CGAN1
+                D1_loss.backward()
+                optimizerD1.step()
+
+            if shadow_removal:
+                D2_loss = lambda_dict['lambda3'] * D_L_CGAN2 + lambda_dict['lambda2'] * D_L_CGAN1
+                D2_loss.backward()
+                optimizerD2.step()
 
             # Train Generator
             set_requires_grad([D1, D2], False)
-            optimizerG.zero_grad()
+            optimizerG1.zero_grad()
+
+            if shadow_removal:
+                optimizerG2.zero_grad()
 
             # L_CGAN1
             fake1 = torch.cat([images, detected_shadow], dim=1)
@@ -224,6 +257,7 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             G_L_data1 = criterionL1(detected_shadow, gt_shadow)
 
             # L_CGAN2
+            #if shadow_removal:
             fake2 = torch.cat([fake1, shadow_removal_image], dim=1)
             out_D2_fake = D2(fake2.detach())
             G_L_CGAN2 = criterionGAN(out_D2_fake, label_D2_real)
@@ -232,22 +266,38 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             G_L_data2 = criterionL1(gt, shadow_removal_image)
 
             #total
-            G_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda2'] * G_L_CGAN1 + lambda_dict['lambda3'] * G_L_CGAN2
-            G_loss.backward()
-            optimizerG.step()
+            
+            if not shadow_removal:
+                G1_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda2'] * G_L_CGAN1
+                G1_loss.backward()
+                optimizerG1.step()
+            
+            if shadow_removal:
+                G2_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda3'] * G_L_CGAN2 + lambda_dict['lambda2'] * G_L_CGAN1
+                G2_loss.backward()
+                optimizerG2.step()
 
-            epoch_d_loss += D_loss.item()
-            epoch_g_loss += G_loss.item()
+            epoch_d1_loss += D1_loss.item()
+            epoch_g1_loss += G1_loss.item()
+
+            if shadow_removal:
+                epoch_d2_loss += D2_loss.item()
+                epoch_g2_loss += G2_loss.item()
 
         t_epoch_finish = time.time()
         print('-----------')
-        print('epoch {} || Epoch_D_Loss:{:.4f} || Epoch_G_Loss:{:.4f}'.format(epoch, epoch_d_loss/batch_size, epoch_g_loss/batch_size))
+        print('epoch {} || Epoch_D1_Loss:{:.4f} || Epoch_G1_Loss:{:.4f}'.format(epoch, epoch_d1_loss/batch_size, epoch_g1_loss/batch_size))
+        print('epoch {} || Epoch_D2_Loss:{:.4f} || Epoch_G2_Loss:{:.4f}'.format(epoch, epoch_d2_loss/batch_size, epoch_g2_loss/batch_size))
         print('timer: {:.4f} sec.'.format(t_epoch_finish - t_epoch_start))
 
-        d_losses += [epoch_d_loss/batch_size]
-        g_losses += [epoch_g_loss/batch_size]
+        d1_losses += [epoch_d1_loss/batch_size]
+        g1_losses += [epoch_g1_loss/batch_size]
+        d2_losses += [epoch_d2_loss/batch_size]
+        g2_losses += [epoch_g2_loss/batch_size]
+
         t_epoch_start = time.time()
-        plot_log({'G':g_losses, 'D':d_losses}, save_model_name)
+        plot_log({'G':g1_losses, 'D':d1_losses}, save_model_name+"_mask_")
+        plot_log({'G':g2_losses, 'D':d2_losses}, save_model_name+"_remove_")
 
         if(epoch%10 == 0):
             torch.save(G1.state_dict(), 'checkpoints/'+save_model_name+'_G1_'+str(epoch)+'.pth')
