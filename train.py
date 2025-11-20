@@ -231,14 +231,17 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             D_L_CGAN2 = loss_D2_fake + loss_D2_real
 
             # total
-            if not shadow_removal:
-                D1_loss = lambda_dict['lambda2'] * D_L_CGAN1
-                D1_loss.backward()
-                optimizerD1.step()
 
+            # Backwards must be called for all lose stats *before* any weights are updated
+            D1_loss = lambda_dict['lambda2'] * D_L_CGAN1
+            D1_loss.backward(retain_graph=True)
+            
+            D2_loss = lambda_dict['lambda3'] * D_L_CGAN2 + lambda_dict['lambda2'] * D_L_CGAN1
+            D2_loss.backward()
+
+            if not shadow_removal:
+                optimizerD1.step()
             if shadow_removal:
-                D2_loss = lambda_dict['lambda3'] * D_L_CGAN2 + lambda_dict['lambda2'] * D_L_CGAN1
-                D2_loss.backward()
                 optimizerD2.step()
 
             # Train Generator
@@ -257,7 +260,6 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
             G_L_data1 = criterionL1(detected_shadow, gt_shadow)
 
             # L_CGAN2
-            #if shadow_removal:
             fake2 = torch.cat([fake1, shadow_removal_image], dim=1)
             out_D2_fake = D2(fake2.detach())
             G_L_CGAN2 = criterionGAN(out_D2_fake, label_D2_real)
@@ -267,14 +269,16 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
 
             #total
             
+            G1_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda2'] * G_L_CGAN1
+            G1_loss.backward(retain_graph=True)
+            
+            G2_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda3'] * G_L_CGAN2 + lambda_dict['lambda2'] * G_L_CGAN1
+            G2_loss.backward()
+            
             if not shadow_removal:
-                G1_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda2'] * G_L_CGAN1
-                G1_loss.backward()
                 optimizerG1.step()
             
             if shadow_removal:
-                G2_loss = G_L_data1 + lambda_dict['lambda1'] * G_L_data2 + lambda_dict['lambda3'] * G_L_CGAN2 + lambda_dict['lambda2'] * G_L_CGAN1
-                G2_loss.backward()
                 optimizerG2.step()
 
             epoch_d1_loss += D1_loss.item()
