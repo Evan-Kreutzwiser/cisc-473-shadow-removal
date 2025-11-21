@@ -15,7 +15,7 @@ def make_datapath_list(phase="train", rate=0.8):
     """
     random.seed(44)
 
-    rootpath = './dataset/ISTD/' + phase + '/'
+    rootpath = './dataset/' + phase + '/'
     files_name = os.listdir(rootpath + phase + '_A')
 
     if ".gitignore" in files_name:

@@ -172,10 +172,10 @@ def main(parser):
     if parser.load is not None:
         print('load checkpoint ' + parser.load)
 
-        G1_weights = torch.load('./checkpoints/ST-CGAN_G1_'+parser.load+'.pth')
+        G1_weights = torch.load('./checkpoints/ST-CGAN_G1_'+parser.load+'.pth', map_location=torch.device('cpu'))
         G1.load_state_dict(fix_model_state_dict(G1_weights))
 
-        G2_weights = torch.load('./checkpoints/ST-CGAN_G2_'+parser.load+'.pth')
+        G2_weights = torch.load('./checkpoints/ST-CGAN_G2_'+parser.load+'.pth',map_location=torch.device('cpu'))
         G2.load_state_dict(fix_model_state_dict(G2_weights))
 
     mean = (0.5,)
@@ -194,9 +194,8 @@ def main(parser):
         print('test ' + parser.image_path)
         test_own_image(G1, G2, parser.image_path, parser.out_path, resized_size, img_transform=ImageTransformOwn(size=size, mean=mean, std=std, brightness=brightness, saturation=saturation, constract=contrast, hue=hue))
 
-    # test images from the ISTD dataset
+    # test images from the SRD dataset
     else:
-        print('test ISTD dataset')
         test_img_list = make_datapath_list(phase='test')
         test_dataset = ImageDataset(img_list=test_img_list,
                                     img_transform=ImageTransform(size=size, crop_size=crop_size, mean=mean, std=std),
