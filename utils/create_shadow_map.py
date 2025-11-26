@@ -7,21 +7,25 @@ def create_shadow_map_ratio(shadow_img, shadow_free_img, ratio_threshold):
     shadow_gray = cv2.cvtColor(shadow_img, cv2.COLOR_BGR2GRAY).astype(np.float32)
     shadow_free_gray = cv2.cvtColor(shadow_free_img, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
-    shadow_gray = np.maximum(shadow_gray, 1.0)
     
-    ratio = shadow_free_gray / shadow_gray
-    
-    shadow_mask = ratio > ratio_threshold
-    
-    
-    shadow_map = shadow_mask.astype(np.uint8) * 255
-    
+    shadow_gray = cv2.GaussianBlur(shadow_gray, (5,5), 0)
+    shadow_free_gray = cv2.GaussianBlur(shadow_free_gray, (5,5), 0)
 
-    kernel = np.ones((3, 3), np.uint8)
-    shadow_map = cv2.morphologyEx(shadow_map, cv2.MORPH_OPEN, kernel)  # remove noise
-    shadow_map = cv2.morphologyEx(shadow_map, cv2.MORPH_CLOSE, kernel) # fill small holes
-    
+    shadow_gray = np.maximum(shadow_gray, 1.0)
+    ratio = shadow_free_gray / shadow_gray
+
+    shadow_mask = ratio > ratio_threshold
+    shadow_map = (shadow_mask.astype(np.uint8) * 255)
+
+
+    # remove noise 
+    kernel = np.ones((7, 7), np.uint8)
+    shadow_map = cv2.morphologyEx(shadow_map, cv2.MORPH_OPEN, kernel)
+    shadow_map = cv2.morphologyEx(shadow_map, cv2.MORPH_CLOSE, kernel)
+    shadow_map = cv2.dilate(shadow_map, np.ones((5,5), np.uint8), iterations=1)
+
     return shadow_map
+
 
 def process_all_images_ratio(ratio_threshold):
 
@@ -48,7 +52,7 @@ def process_all_images_ratio(ratio_threshold):
         cv2.imwrite(str(output_path), shadow_map)
         
         processed_count += 1
-        if processed_count % 10 == 0:  # Print progress every 10 images
+        if processed_count % 10 == 0:  
             print(f"processed {processed_count}/{len(shadow_images)} images")
             
         
@@ -57,4 +61,4 @@ def process_all_images_ratio(ratio_threshold):
 
 
 if __name__ == "__main__":
-    process_all_images_ratio(1.5)
+    process_all_images_ratio(1.2)

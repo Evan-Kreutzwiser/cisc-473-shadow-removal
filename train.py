@@ -61,6 +61,28 @@ def unnormalize(x):
     x = x * torch.Tensor((0.5, )) + torch.Tensor((0.5, ))
     x = x.transpose(1, 3)
     return x
+def validation_loss(G1,G2,val_data, device, criterionL1):
+    G1.eval()
+    G2.eval()
+    val_loss = 0.0
+
+    with torch.no_grad():
+        for img, gt_shadow, gt in val_data:
+            img = img.unsqueeze(0).to(device)
+            gt_shadow = gt_shadow.unsqueeze(0).to(device)
+            gt = gt.unsqueeze(0).to(device)
+
+            shadow = G1(img)
+            shadow_temp = torch.cat([img, shadow], dim=1)
+            image_no_shadow = G2(shadow_temp)
+
+            loss1 = criterionL1(shadow, gt_shadow)
+            loss2 = criterionL1(image_no_shadow, gt)
+
+            val_loss += loss1.item() + loss2.item()
+
+    return val_loss / len(val_data)
+
 
 def evaluate(G1, G2, dataset, device, filename):
     img, gt_shadow, gt = zip(*[dataset[i] for i in range(8)])
@@ -74,7 +96,7 @@ def evaluate(G1, G2, dataset, device, filename):
         concat = torch.cat([img, detected_shadow], dim=1)
         shadow_removal_image = G2(concat.to(device))
         shadow_removal_image = shadow_removal_image.to(torch.device('cpu'))
-
+    
     grid_detect = make_grid(torch.cat((unnormalize(gt_shadow), unnormalize(detected_shadow)), dim=0))
     grid_removal = make_grid(torch.cat((unnormalize(img), unnormalize(gt), unnormalize(shadow_removal_image)), dim=0))
 
@@ -156,6 +178,9 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
 
     shadow_removal = False
 
+    best_val_loss = 100000
+    patience = 10
+    patience_attempts = 0
     for epoch in range(num_epochs+1):
 
         if (not(shadow_removal)) and (epoch > 30):
@@ -303,11 +328,23 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
         plot_log({'G':g1_losses, 'D':d1_losses}, save_model_name+"_mask_")
         plot_log({'G':g2_losses, 'D':d2_losses}, save_model_name+"_remove_")
 
-        if(epoch%10 == 0):
+        val_loss = validation_loss(G1,G2,val_dataset,device,criterionL1)
+        print("Validation loss: ", val_loss)
+        
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
             torch.save(G1.state_dict(), 'checkpoints/'+save_model_name+'_G1_'+str(epoch)+'.pth')
             torch.save(G2.state_dict(), 'checkpoints/'+save_model_name+'_G2_'+str(epoch)+'.pth')
             torch.save(D1.state_dict(), 'checkpoints/'+save_model_name+'_D1_'+str(epoch)+'.pth')
             torch.save(D2.state_dict(), 'checkpoints/'+save_model_name+'_D2_'+str(epoch)+'.pth')
+
+            patience_attempts = 0
+        else:
+            patience_attempts +=1
+
+        if patience_attempts >= patience:
+            return G1,G2,D1,D2
+        if(epoch%10 == 0):
             G1.eval()
             G2.eval()
             evaluate(G1, G2, val_dataset, device, '{:s}/val_{:d}'.format('result', epoch))
