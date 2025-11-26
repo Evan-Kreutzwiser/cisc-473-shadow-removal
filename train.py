@@ -279,18 +279,23 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
         
         if val_loss < best_val_loss:
             best_val_loss = val_loss
-            torch.save(G1.state_dict(), 'checkpoints/'+save_model_name+'_G1_'+str(epoch)+'.pth')
-            torch.save(G2.state_dict(), 'checkpoints/'+save_model_name+'_G2_'+str(epoch)+'.pth')
-            torch.save(D1.state_dict(), 'checkpoints/'+save_model_name+'_D1_'+str(epoch)+'.pth')
-            torch.save(D2.state_dict(), 'checkpoints/'+save_model_name+'_D2_'+str(epoch)+'.pth')
-
             patience_attempts = 0
         else:
             patience_attempts +=1
 
         if patience_attempts >= patience:
+            torch.save(G1.state_dict(), 'checkpoints/'+save_model_name+'_G1_'+str(epoch)+'.pth')
+            torch.save(G2.state_dict(), 'checkpoints/'+save_model_name+'_G2_'+str(epoch)+'.pth')
+            torch.save(D1.state_dict(), 'checkpoints/'+save_model_name+'_D1_'+str(epoch)+'.pth')
+            torch.save(D2.state_dict(), 'checkpoints/'+save_model_name+'_D2_'+str(epoch)+'.pth')
             return G1,G2,D1,D2
+
         if(epoch%10 == 0):
+            torch.save(G1.state_dict(), 'checkpoints/'+save_model_name+'_G1_'+str(epoch)+'.pth')
+            torch.save(G2.state_dict(), 'checkpoints/'+save_model_name+'_G2_'+str(epoch)+'.pth')
+            torch.save(D1.state_dict(), 'checkpoints/'+save_model_name+'_D1_'+str(epoch)+'.pth')
+            torch.save(D2.state_dict(), 'checkpoints/'+save_model_name+'_D2_'+str(epoch)+'.pth')
+
             G1.eval()
             G2.eval()
             evaluate(G1, G2, val_dataset, device, '{:s}/val_{:d}'.format('result', epoch))
