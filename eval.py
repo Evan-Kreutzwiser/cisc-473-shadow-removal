@@ -69,10 +69,10 @@ def evaluate():
             gt_img = gt_img.resize(pred_img.size, Image.BILINEAR)
             gt_mask = gt_img.resize(pred_mask.size, Image.BILINEAR)
 
-            gt_img_tensor = to_tensor(gt_img).unsqueeze(0)
-            pred_img_tensor = to_tensor(pred_img).unsqueeze(0)
-            gt_mask_tensor = to_tensor(gt_mask)
-            pred_mask_tensor = to_tensor(pred_mask)
+            gt_img_tensor = to_tensor(gt_img).unsqueeze(0).to(device)
+            pred_img_tensor = to_tensor(pred_img).unsqueeze(0).to(device)
+            gt_mask_tensor = to_tensor(gt_mask).to(device)
+            pred_mask_tensor = to_tensor(pred_mask).to(device)
 
             #PSNR
             p_total += PSNR(gt_img_tensor, pred_img_tensor)
