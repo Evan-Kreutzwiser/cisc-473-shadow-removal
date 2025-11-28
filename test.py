@@ -154,15 +154,15 @@ def test_own_image(G1, G2, path, out_path, size, img_transform):
                                      unnormalize(shadow_removal_image)],
                                     dim=0))
 
-        save_image(grid, out_path + '/grid_' + path.split('/')[-1])
+        save_image(grid, os.path.join(out_path, 'grid_' + os.path.basename(path)))
 
         detected_shadow = transforms.ToPILImage(mode='L')(unnormalize(detected_shadow)[0, :, :, :])
         detected_shadow= detected_shadow.resize((width, height), Image.LANCZOS)
-        detected_shadow.save(out_path + '/detected_shadow_' + path.split('/')[-1])
+        detected_shadow.save(out_path + '/detected_shadow_' + os.path.basename(path))
 
         shadow_removal_image = transforms.ToPILImage(mode='RGB')(unnormalize(shadow_removal_image)[0, :, :, :])
         shadow_removal_image = shadow_removal_image.resize((width, height), Image.LANCZOS)
-        shadow_removal_image.save(out_path + '/shadow_removal_image_' + path.split('/')[-1])
+        shadow_removal_image.save(out_path + '/shadow_removal_image_' + os.path.basename(path))
 
 def main(parser):
     G1 = MaskGenerator(input_channels=3, output_channels=1)
@@ -192,7 +192,7 @@ def main(parser):
     # test own image
     if parser.image_path is not None:
         print('test ' + parser.image_path)
-        test_own_image(G1, G2, parser.image_path, parser.out_path, resized_size, img_transform=ImageTransformOwn(size=size, mean=mean, std=std, brightness=brightness, saturation=saturation, constract=contrast, hue=hue))
+        test_own_image(G1, G2, parser.image_path, parser.out_path, resized_size, img_transform=ImageTransformOwn(size=size, mean=mean, std=std))
 
     # test images from the SRD dataset
     else:
