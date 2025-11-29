@@ -6,6 +6,7 @@ from . import ISTD_transforms
 from PIL import Image
 import random
 import matplotlib.pyplot as plt
+from torchvision import transforms
 
 
 def make_datapath_list(phase="train", rate=0.8):
