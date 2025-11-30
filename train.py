@@ -145,13 +145,14 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
 
     lr = parser.lr
     beta1, beta2 = 0.5, 0.999
+    decay = 0
 
     optimizerG = torch.optim.Adam([{'params': G1.parameters()}, {'params': G2.parameters()}],
                                   lr=lr,
-                                  betas=(beta1, beta2))
+                                  betas=(beta1, beta2), weight_decay=decay)
     optimizerD = torch.optim.Adam([{'params': D1.parameters()}, {'params': D2.parameters()}],
                                   lr=lr,
-                                  betas=(beta1, beta2))
+                                  betas=(beta1, beta2), weight_decay=decay)
 
     criterionGAN = nn.BCEWithLogitsLoss().to(device)
     criterionL1 = nn.L1Loss().to(device)
@@ -168,7 +169,7 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
     d_losses = []
 
     best_val_loss = 100000
-    patience = 10
+    patience = 15
     patience_attempts = 0
     for epoch in range(num_epochs+1):
 
@@ -334,9 +335,13 @@ def main(parser):
     crop_size = parser.crop_size
     batch_size = parser.batch_size
     num_epochs = parser.epoch
+    brightness = 0.0 #0.4
+    saturation = 0.0 #0.7
+    contrast = 0.0 #0.1 
+    hue = 0.0 #0.015
 
     train_dataset = ImageDataset(img_list=train_img_list,
-                                img_transform=ImageTransform(size=size, crop_size=crop_size, mean=mean, std=std),
+                                img_transform=ImageTransform(size=size, crop_size=crop_size, mean=mean, std=std, brightness=brightness, saturation=saturation, contrast=contrast, hue=hue),
                                 phase='train')
     val_dataset = ImageDataset(img_list=val_img_list,
                                 img_transform=ImageTransform(size=size, crop_size=crop_size, mean=mean, std=std),
