@@ -331,7 +331,8 @@ def train_model(G1, G2, D1, D2, dataloader, val_dataset, num_epochs, parser, sav
         val_loss = validation_loss(G1,G2,val_dataset,device,criterionL1)
         print("Validation loss: ", val_loss)
         
-        if val_loss < best_val_loss:
+        # Don't early stop before second generator has a chance to start training
+        if val_loss < best_val_loss or not shadow_removal:
             best_val_loss = val_loss
             patience_attempts = 0
         else:
