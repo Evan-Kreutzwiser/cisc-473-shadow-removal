@@ -11,6 +11,7 @@ import torch
 from PIL import Image
 from torch import Tensor
 import torchvision.transforms.functional as F
+from torchvision import transforms
 
 
 class Compose(object):
@@ -159,3 +160,34 @@ class RandomHorizontalFlip(torch.nn.Module):
 
     def __repr__(self):
         return self.__class__.__name__ + '(p={})'.format(self.p)
+    
+
+class ColorJitter:
+    def __init__(self, brightness=0, contrast=0, saturation=0, hue=0):
+        self.jitter = transforms.transforms.ColorJitter(brightness, contrast, saturation, hue)
+
+    def __call__(self, imgs):
+        fn_indices, b, c, s, h = transforms.transforms.ColorJitter.get_params(
+            self.jitter.brightness,
+            self.jitter.contrast,
+            self.jitter.saturation,
+            self.jitter.hue
+        )
+
+        for index in fn_indices:
+            img, gt_mask, gt = imgs
+            # ColorJitter can apply the transformations out of order, and conveys that order in fn_indices
+            if index == 0 and b:
+                imgs = (F.adjust_brightness(img, b), gt_mask, F.adjust_brightness(gt, b) )
+            if index == 1 and c:
+                imgs = (F.adjust_contrast(img, c), gt_mask, F.adjust_contrast(gt, c))
+            if index == 2 and s:
+                imgs = (F.adjust_saturation(img, s), gt_mask, F.adjust_saturation(gt, s))
+            if index == 3 and h:
+                imgs = (F.adjust_hue(img, h), gt_mask, F.adjust_hue(gt, h))
+
+        return imgs
+    
+    def __repr__(self):
+        b = self.jitter.brightness, c = self.jitter.contrast, s = self.jitter.saturation, h = self.jitter.hue
+        return f"{self.__class__.__name__}(brightness={b}, contrast={c}, saturation={s}, hue={h})"
